@@ -73,6 +73,6 @@ echo "$FULL_INPUT" > ./chat.txt
 # Save Codex reply to whispers
 #echo "$output" > ./Context/.whispers.txt
 
-codex e "Read ./chat.txt and apply." | tee ./Context/.whispers.txt | tee /dev/tty
+codex e "Read ./chat.txt and apply." | tee ./Context/.whispers.txt #| tee /dev/tty
 
 rm ./chat.txt

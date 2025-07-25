@@ -1,0 +1,54 @@
+#!/bin/bash
+#FILE=${1:-./Context/conjuration_log.json}#
+
+#watch -n 1 bash -c "
+#  clear
+#  echo '📜 Make a plan for your next conjuration'
+#  echo '────────────────────────────────────'
+#  jq -r '
+#    paths(scalars) as \$p |
+#    \"\(\$p | join(\" → \")):\t\(. | getpath(\$p))\"#
+#	' \"$FILE\" | sed 's/^/• /' | less -R
+#"
+
+#!/bin/bash
+FILE=${1:-./Context/conjuration_log.json}
+spinner="/|\\-"
+i=0
+BASELINE="/tmp/.jsonwatch_baseline.txt"
+
+# Store initial flat snapshot
+jq -r '
+  paths(scalars) as $p |
+  "\($p | join(" → ")):\t\(getpath($p))"
+' "$FILE" > "$BASELINE"
+
+while true; do
+ clear
+  printf "📜 Make a plan for your next conjuration \033[2m[%c]\033[0m\n" "${spinner:i++%${#spinner}:1}"
+  echo '─────────────────────────────────────────────────────────────'
+  
+  # Flatten current state
+  TMP_CURR=$(mktemp)
+  jq -r '
+    paths(scalars) as $p |
+    "\($p | join(" → ")):\t\(getpath($p))"
+  ' "$FILE" > "$TMP_CURR"
+
+  # Compare against baseline and color if changed
+  while IFS= read -r line; do
+    key=${line%%:*}
+    val=${line#*:}
+    orig_val=$(grep "^$key:" "$BASELINE" | cut -f2-)
+
+    if [[ "$val" != "$orig_val" ]]; then
+      # Yellow for changed entries
+      printf "• %s:\t\033[33m%s\033[0m\n" "$key" "$val"
+    else
+      printf "• %s:\t%s\n" "$key" "$val"
+    fi
+  done < "$TMP_CURR"
+
+  rm "$TMP_CURR"
+  sleep 1
+done

@@ -1,0 +1,46 @@
+import os
+from rich.console import Console
+from rich.table import Table
+from rich.live import Live
+import json, time, sys
+
+def flatten(d, prefix=''):
+    result = {}
+    if isinstance(d, dict):
+        for k, v in d.items():
+            result.update(flatten(v, f'{prefix}{k} → '))
+    elif isinstance(d, list):
+        for i, v in enumerate(d):
+            result.update(flatten(v, f'{prefix}{i} → '))
+    else:
+        result[prefix[:-3]] = str(d)
+    return result
+
+FILE = sys.argv[1] if len(sys.argv) > 1 else './Context/conjuration_log.json'
+with open(FILE) as f:
+    base = flatten(json.load(f))
+
+console = Console()
+
+def make_table(data, base, max_rows=20):
+    table = Table()
+    table.add_column("Key", style="bold cyan",justify="right")
+    table.add_column("Value", justify="left")
+    
+    rows = list(data.items())
+    for k, v in data.items():
+        if base.get(k) != v:
+            table.add_row(k, f"[yellow]{v}[/yellow]")
+        else:
+            table.add_row(k, v)
+        if len(rows) > max_rows:
+            table.add_row("...", f"[dim]and {len(rows) - max_rows} more[/dim]")
+    return table
+
+with Live(console=console, refresh_per_second=4, screen=True) as live:
+    while True:
+        with open(FILE) as f:
+            current = flatten(json.load(f))
+        table = make_table(current, base)
+        live.update(table)
+        time.sleep(1)

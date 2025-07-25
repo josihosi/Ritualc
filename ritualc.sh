@@ -73,21 +73,29 @@ SYSTEM_INPUT=$(jq -n --arg sys   "$ROLE_GOBLIN" \
 touch ./Context/.whispers.txt
 
 Local_Prompt=$(cat <<EOF
-Summarize
+Summarize this text. Give nothing else, but a summary.
 EOF
 )
 
 #echo "$SYSTEM_INPUT"
 
-# Create temp combined input (to avoid clobbering while reading)
-#echo "Running goblin_chat..."
-#echo "System input: $"
+# Save system input to temp file
 echo "$SYSTEM_INPUT" > /tmp/system_input.json
-#echo "/tmp/system_input.json $SYSTEM_INPUT"
+
+# Start JSON watcher in background
+/bin/Ritualc/Scripts/jsonwatch.py &
+VIS_PID=$!
+
+# Run Codex phase
 codex_output=$(/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json)
-#echo "Codex output $codex_output"
-# Merge and reprocess with Mistral
-{ echo "$Local_Prompt"; cat ./Context/.whispers.txt; echo "$codex_output"; } \
-  | ollama run tinyllama > /tmp/.whispers.tmp && \
-#> /tmp/.whispers.tmp && \
+
+# Pipe through Ollama (Mistral) and update whisper log
+{
+  echo "$Local_Prompt"
+  cat ./Context/.whispers.txt
+  echo "$codex_output"
+} | ollama run tinyllama > /tmp/.whispers.tmp && \
   mv /tmp/.whispers.tmp ./Context/.whispers.txt
+
+# Kill the background JSON watcher
+kill "$VIS_PID" 2>/dev/null
