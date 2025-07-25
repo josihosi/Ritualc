@@ -36,14 +36,14 @@ else
     if [ -f "./query.txt" ]; then
         MESSAGE=$(<./query.txt)
     else
-        echo "# At your service my liege." > ./query.txt
+        echo "# At your service my liege." > ./query.tx
         echo "Inside ./query.txt you may burden you may burden us with your desires."
         ${EDITOR:-micro} ./query.txt  # optional: auto-opens in nano or $EDITOR
         exit 0
     fi
 fi
 
-# Call the Goblin (OpenAI API or Codex CLI in chat mode)
+# Call the role Description
 
 get_role_prompt() {
     case "$1" in
@@ -54,15 +54,21 @@ get_role_prompt() {
 }
 
 ROLE_PROMPT=$(get_role_prompt "goblin")
+#echo "$ROLE_PROMPT"
+# Call Context
 
-JSON_INPUT=$(jq -n \
-    --arg system "$ROLE_GOBLIN" \
-    --arg context "$CONTEXT" \
-    --arg message "$MSG" \
-    '[
-        {"role": "system", "content": $system},
-        {"role": "user", "content": ($context + "\n\nDark Prince: " + $message)}
-    ]')
+CONTEXT_FILE="./Context/conjuration_log.json"
+#echo "$CONTEXT_FILE"
+CONTEXT_CONTENT=$(<"$CONTEXT_FILE")   # contents, not the filename
+
+SYSTEM_INPUT=$(jq -n --arg sys   "$ROLE_GOBLIN" \
+                   --arg ctx   "$CONTEXT_CONTENT" \
+                   --arg user  "$MESSAGE" '
+[
+  { "role":"system", "content":$sys },
+  { "role":"system", "content":$ctx },
+  { "role":"user",   "content":$user }
+]')
 
 touch ./Context/.whispers.txt
 
@@ -70,15 +76,18 @@ Local_Prompt=$(cat <<EOF
 Summarize
 EOF
 )
-./scripts/goblin_chat.sh "$JSON_INPUT"
+
+#echo "$SYSTEM_INPUT"
 
 # Create temp combined input (to avoid clobbering while reading)
-codex_output=$(./scripts/goblin_chat.sh "$JSON_INPUT")
-
+#echo "Running goblin_chat..."
+#echo "System input: $"
+echo "$SYSTEM_INPUT" > /tmp/system_input.json
+#echo "/tmp/system_input.json $SYSTEM_INPUT"
+codex_output=$(/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json)
+#echo "Codex output $codex_output"
 # Merge and reprocess with Mistral
-{ cat ./Context/.whispers.txt; echo "$codex_output"; } | mistral instruct \
-  --prompt "Summarize the combined whispers." \
-  --model mistral-7b-instruct-v0.1 \
-  > /tmp/.whispers.tmp && mv /tmp/.whispers.tmp ./Context/.whispers.txt
-
-
+{ echo "$Local_Prompt"; cat ./Context/.whispers.txt; echo "$codex_output"; } \
+  | ollama run tinyllama > /tmp/.whispers.tmp && \
+#> /tmp/.whispers.tmp && \
+  mv /tmp/.whispers.tmp ./Context/.whispers.txt
