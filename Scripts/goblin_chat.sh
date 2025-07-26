@@ -73,6 +73,42 @@ echo "$FULL_INPUT" > ./chat.txt
 # Save Codex reply to whispers
 #echo "$output" > ./Context/.whispers.txt
 
-codex e "Read ./chat.txt and apply." | tee ./Context/.whispers.txt #| tee /dev/tty
+## Launch split-screen using tmux: JSON renderer and Codex
+# Determine script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-rm ./chat.txt
+ # Ensure tmux is available
+ if ! command -v tmux > /dev/null 2>&1; then
+  echo "Error: tmux is required for Goblin Chat split. Please install tmux." >&2
+  exit 1
+fi
+ 
+# Enable mouse support to allow clicking on panes to focus them
+tmux set-option -g mouse on 2>/dev/null || true
+
+# If inside an existing tmux session, create a new window; otherwise, create a new session
+if [ -n "${TMUX-}" ]; then
+  # Running inside tmux: open a new window in the current session
+  CURRENT_SESSION=$(tmux display-message -p '#{session_name}')
+  # Kill existing goblin_chat window if present
+  if tmux list-windows -t "$CURRENT_SESSION" -F "#{window_name}" 2>/dev/null | grep -q '^goblin_chat$'; then
+    tmux kill-window -t "${CURRENT_SESSION}:goblin_chat"
+  fi
+  # Create window and split
+  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
+  tmux split-window -h -d -t "${CURRENT_SESSION}:goblin_chat" "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
+  tmux select-layout -t "${CURRENT_SESSION}:goblin_chat" even-horizontal
+  tmux select-window -t "${CURRENT_SESSION}:goblin_chat"
+  exit 0
+else
+  # Not inside tmux: start a detached session
+  # Kill existing session if present
+  if tmux has-session -t goblin_chat 2>/dev/null; then
+    tmux kill-session -t goblin_chat
+  fi
+  tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
+  tmux split-window -h -d -t goblin_chat "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
+  tmux select-layout -t goblin_chat even-horizontal
+  tmux attach -t goblin_chat
+  exit 0
+fi

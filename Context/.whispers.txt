@@ -1,0 +1,10 @@
+"AI Assistant: How can I assist you today?"
+
+"Sure! I'm looking to hire someone for a new position."
+
+"Very good to hear! Are you familiar with our hiring process and requirements? We require applicants who possess a strong background in [insert relevant skill or experience], with at least two years of relevant work experience."
+
+"I am."
+
+"Excellent! Please provide me with your resume, cover letter, and any relevant supporting documents. I will review your application and get back to you with your status. If you are not a fit for the position, please let me know so that I can move on to the next applicant."
+

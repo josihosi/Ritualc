@@ -79,23 +79,31 @@ EOF
 
 #echo "$SYSTEM_INPUT"
 
-# Save system input to temp file
-echo "$SYSTEM_INPUT" > /tmp/system_input.json
-
-# Start JSON watcher in background
-#/bin/Ritualc/Scripts/jsonwatch.py &
-#VIS_PID=$!
-
-# Run Codex phase
-codex_output=$(/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json)
-
-# Pipe through Ollama (Mistral) and update whisper log
-{
-  echo "$Local_Prompt"
-  cat ./Context/.whispers.txt
-  echo "$codex_output"
-} | ollama run tinyllama > /tmp/.whispers.tmp && \
-  mv /tmp/.whispers.tmp ./Context/.whispers.txt
-
-# Kill the background JSON watcher
-kill "$VIS_PID" 2>/dev/null
+# 1. save prompt for Codex
+  echo "$SYSTEM_INPUT" > /tmp/system_input.json
+  CONJ_JSON=./Context/conjuration_log.json
+  # 2. start Codex in the background, capture its stdout
+  tmp_codex_out=$(mktemp)
+  /bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json >"$tmp_codex_out" &
+  COD_PID=$!
+  
+  # 3. run JSON watcher in the foreground (exit with q)
+ # /bin/Ritualc/Scripts/jsonwatch.sh     # ← you interact here
+/bin/Ritualc/Scripts/jsonwatch.sh "$CONJ_JSON" "$tmp_codex_out"
+  
+  # 4. wait for Codex (if still running) and read its output
+  # (when you hit ‘q’ and exit, you can optionally kill Codex if you like:)
+  kill $COD_PID
+  
+  wait "$COD_PID"
+  codex_output=$(<"$tmp_codex_out")
+  rm -f "$tmp_codex_out"
+  
+  # 5. summarise with Ollama
+  {
+    echo "$Local_Prompt"
+    cat ./Context/.whispers.txt
+    echo "$codex_output"
+  } | ollama run tinyllama > /tmp/.whispers.tmp &&
+    mv /tmp/.whispers.tmp ./Context/.whispers.txt
+  
