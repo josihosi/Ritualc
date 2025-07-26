@@ -97,8 +97,14 @@ if [ -n "${TMUX-}" ]; then
   # Create window and split
   tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t "${CURRENT_SESSION}:goblin_chat" "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
+  # Bind 'q' to kill the goblin_chat window without prefix
+  tmux bind-key -n q kill-window -t "${CURRENT_SESSION}:goblin_chat"
   tmux select-layout -t "${CURRENT_SESSION}:goblin_chat" even-horizontal
   tmux select-window -t "${CURRENT_SESSION}:goblin_chat"
+  # Wait until goblin_chat window is closed (exit on 'q')
+  while tmux list-windows -t "${CURRENT_SESSION}" -F "#{window_name}" | grep -q '^goblin_chat$'; do
+    sleep 0.5
+  done
   exit 0
 else
   # Not inside tmux: start a detached session
@@ -108,6 +114,8 @@ else
   fi
   tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t goblin_chat "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
+  # Bind 'q' to kill the goblin_chat session without prefix
+  tmux bind-key -n q kill-session -t goblin_chat
   tmux select-layout -t goblin_chat even-horizontal
   tmux attach -t goblin_chat
   exit 0

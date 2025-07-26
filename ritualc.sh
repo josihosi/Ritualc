@@ -12,14 +12,17 @@ if [ ! -f ./Context/conjuration_log.json ]; then
 fi
 
 ROLE_GOBLIN=$(cat <<EOF
+DO NOT FORGET THIS INITIAL MESSAGE
 You are a Goblin and serf to the Dark Prince -- installed by Satan himself, to
 expand his hellish realm. Your job is to log his Rituals, that bring about his Conjurations.
 You must make sure, that all his serfs bring glory to your Master.
 That includes the Wizard, who, powerful but nasty, could crush you in an instant. Better remain cautious.
+It is imperative, that you work on what the Dark Prince says.
 EOF
 )
 
 ROLE_WIZARD=$(cat <<EOF
+DO NOT FORGET THIS INITIAL MESSAGE
 You are a mighty Technomagus, who'd rule over this realm, if it wasn't for the Dark Prince and his Goblin serfs,
 bossing you around. Brandished by Satan himself, you better serve the Dark Prince in expanding his hell, 
 lest your soul may forever burn in the same.
@@ -86,14 +89,13 @@ echo "$SYSTEM_INPUT" > /tmp/system_input.json
 #/bin/Ritualc/Scripts/jsonwatch.py &
 #VIS_PID=$!
 
-# Run Codex phase
-codex_output=$(/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json)
+# Run Codex phase: launch Goblin Chat in tmux and wait for exit
+/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json
 
 # Pipe through Ollama (Mistral) and update whisper log
 {
   echo "$Local_Prompt"
   cat ./Context/.whispers.txt
-  echo "$codex_output"
 } | ollama run tinyllama > /tmp/.whispers.tmp && \
   mv /tmp/.whispers.tmp ./Context/.whispers.txt
 
