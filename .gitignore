@@ -1,0 +1,14 @@
+# .gitignore for Ritualc project
+# Ignore runtime artifacts
+Context/.whispers.txt
+chat.txt
+# Ignore temporary files
+*.tmp
+# Ignore backup files
+*.bu
+# Ignore Python bytecode and cache directories
+__pycache__/
+**/__pycache__/
+*.py[cod]*
+# Ignore OS generated files
+.DS_Store
