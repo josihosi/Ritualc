@@ -23,7 +23,7 @@
 
       "Description": "CCC Update task description, bit of detail wont hurt",
 
-      "Expected File tree": ["./File1.txt",'./File2.txt'],
+      "Expected File tree": ["./File1.txt","./File2.txt"],
 
       "Status": "DDD unstarted",
 
@@ -51,7 +51,7 @@
 
       "Description": "CCC Update task description, bit of detail wont hurt",
 
-      "Expected File tree": ["CCC ./File1.txt",'CCC ./File2.txt'],
+      "Expected File tree": ["CCC ./File1.txt","CCC ./File2.txt"],
 
       "Status": "DDD unstarted",
 

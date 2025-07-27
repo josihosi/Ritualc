@@ -1,13 +1,13 @@
 {
-  "Project Name": "jsonwatch.sh: Debug, Enhancement & Validation",
+  "Project Name": "CCC Update Project Name, if necessary",
 
   "Created": "created",
 
   "Last Updated": "last_update",
 
-  "Summary": "Completed initial debugging and dependency fixes, implemented robust error handling, and prepared comprehensive tests. Next focus is validating change detection accuracy and patch output formatting.",
+  "Summary": "CCC Update Summary of Project.",
 
-  "Success Definition": "The script monitors a JSON file and, upon detecting changes, outputs each change as a standalone JSON Patch object per line, conforming to RFC 6902. Successful execution emits valid JSON patches line-by-line and exits with status 0.",
+  "Success Definition": "CCC Update definition of Project success state. This section should contain success output, as well as specify desired state/format of the output.",
 
  
 
@@ -18,24 +18,45 @@
   "Tasks": [
 
     {
-      "ID": "JSH-001",
-      "Description": "Perform a thorough code review of jsonwatch.sh to identify syntax errors, missing dependencies, and edge-case vulnerabilities.",
-      "Status": "DDD done",
-      "Timestamp": "task_timestamp"
+
+      "ID": "CCC some task ID system",
+
+      "Description": "CCC Update task description, bit of detail wont hurt",
+
+      "Expected File tree": ["./File1.txt","./File2.txt"],
+
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "CCC expected continuation time in hours, . as decimal point."
+
     },
 
     {
-      "ID": "JSH-002",
-      "Description": "Implement robust argument parsing, validate JSON input, and handle errors gracefully with descriptive messages and appropriate exit codes.",
-      "Status": "DDD done",
-      "Timestamp": "task_timestamp"
+
+      "ID": "CCC some task ID system",
+
+      "Description": "CCC Update task description, bit of detail wont hurt",
+
+      "Expected File tree": ["CCC ./File1.txt","CCC ./File2.txt"],
+
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "CCC expected continuation time in hours, . as decimal point."
+
     },
 
     {
-      "ID": "JSH-003",
-      "Description": "Develop and execute automated tests using diverse sample JSON files, verify patch output accuracy, and update documentation with usage examples and expected outputs.",
-      "Status": "DDD done",
-      "Timestamp": "task_timestamp"
+
+      "ID": "CCC some task ID system",
+
+      "Description": "CCC Update task description, bit of detail wont hurt",
+
+      "Expected File tree": ["CCC ./File1.txt","CCC ./File2.txt"],
+
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "CCC expected continuation time in hours, . as decimal point."
+
     }
 
   ],
@@ -56,7 +77,10 @@
 
 },
 
- 
+"Expected File Tree": {
+
+	"CCC ./": "File 1, File 2"
+},
 
   "Goblin Diary":
 
@@ -85,9 +109,9 @@
   "Dark Prince Diary": 
   {
 
-    "Diary": "The Dark Prince commands demonstration of the working script immediately, demanding flawless JSON patch outputs and zero tolerance for errors.",
+    "Diary": "CCC His liege may record all whims that the Dark Prince displays.",
 
-    "Mood": "expectant"
+    "Mood": "CCC What is the current mood of the Dark Prince, regarding the progress of his rituals? Answer in a single word."
 
   },
 
@@ -97,7 +121,7 @@
 
  
 
-  "Overall Project Description": "Implementation and initial testing are complete. The script is now debugged, enhanced, and tested. The next step is to validate change detection accuracy and patch output formatting against the success criteria.",
+  "Overall Project Description": "CCC How far away are we from Success Definition, and what will need to be conjured to get there?",
 
   "Ritual Needs": "WWW Does the Wizard wish for anything to be installed in his silicone realm?"
 
