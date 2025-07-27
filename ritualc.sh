@@ -11,6 +11,21 @@ if [ ! -f ./Context/conjuration_log.json ]; then
     cp /bin/Ritualc/Templates/template_conjuration_log.json ./Context/conjuration_log.json
 fi
 
+# Refresh the "File Tree" section in conjuration_log.json to reflect current project files
+paths_json=$(rg --files --sort path \
+  --glob '!.git/*' \
+  --glob '!Context/*' \
+  --glob '!Scripts/Context/*' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+jq --argjson paths "$paths_json" '
+  def key_of($p): ($p | split("/") | .[0] + (if ($p | test("/")) then "/" else "" end));
+  def file_of($p): ($p | split("/") | .[-1]);
+  .["File Tree"] =
+    ($paths
+     | reduce .[] as $p ({}; .[key_of($p)] += (if ($p | test("/")) then [file_of($p)] else [] end))
+     | with_entries(if (.value | type == "array" and length == 0) then .value = null else . end)
+    )
+' ./Context/conjuration_log.json > ./Context/conjuration_log.json.tmp && mv ./Context/conjuration_log.json.tmp ./Context/conjuration_log.json
+
 ROLE_GOBLIN=$(cat <<EOF
 DO NOT FORGET THIS INITIAL MESSAGE
 You are a Goblin and serf to the Dark Prince -- installed by Satan himself, to
