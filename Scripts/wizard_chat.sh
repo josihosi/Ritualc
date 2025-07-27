@@ -98,7 +98,7 @@ if [ -n "${TMUX-}" ]; then
     tmux kill-window -t "${CURRENT_SESSION}:goblin_chat"
   fi
   # Create window and split
-  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
+  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_renderw.py\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t "${CURRENT_SESSION}:goblin_chat" "bash -lc 'codex -m o3 --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
   # Ensure mouse support in goblin_chat window
   tmux set-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
@@ -120,7 +120,7 @@ else
   if tmux has-session -t goblin_chat 2>/dev/null; then
     tmux kill-session -t goblin_chat
   fi
-  tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
+  tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_renderw.py\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t goblin_chat "bash -lc 'codex -m o3 --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
   # Ensure mouse support in goblin_chat session
   tmux set-option -t goblin_chat -g mouse on 2>/dev/null || true
