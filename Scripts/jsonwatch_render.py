@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, json, time, os, math
+import sys, json, time, os, math, random
 from contextlib import contextmanager          # <<< NEW
 from rich.table import Table
 from rich.console import Console
@@ -59,7 +59,7 @@ def flatten(d, prefix=''):
                 for k2, v2 in flatten(v, f"{prefix}{i} → ").items()}
     return {prefix.rstrip(" → "): str(d)}
 
-def make_table(curr, base, page, page_size):
+def make_table(curr, base, page, page_size, goblin_key=None):
     keys      = list(curr.keys())
     total_pg  = max(1, math.ceil(len(keys) / page_size))
     start, end = page * page_size, (page + 1) * page_size
@@ -73,7 +73,15 @@ def make_table(curr, base, page, page_size):
 
     for k in keys[start:end]:
         val = curr[k]
-        tbl.add_row(k, f"[yellow]{val}[/yellow]" if base.get(k) != val else val)
+        if base.get(k) != val:
+            # highlight changed values; show goblin at its current key
+            if goblin_key is not None and k == goblin_key:
+                display = f"{val} 👺"
+            else:
+                display = val
+            tbl.add_row(k, f"[yellow]{display}[/yellow]")
+        else:
+            tbl.add_row(k, val)
     return tbl
 
 # ---------- main -----------------------------------------------
@@ -91,8 +99,11 @@ else:
 console = Console()
 
 with raw_mode_if_tty():                       # <<< use new CM
+    # initialize goblin jump state
+    goblin_key = None
+    last_goblin_jump = time.time()
     try:
-        with Live(make_table(current, baseline, page, page_size),
+        with Live(make_table(current, baseline, page, page_size, goblin_key),
                   console=console, refresh_per_second=2, screen=True) as live:
 
             while True:
@@ -107,7 +118,13 @@ with raw_mode_if_tty():                       # <<< use new CM
 
                 with open(FILE) as f:
                     current = flatten(json.load(f))
-                live.update(make_table(current, baseline, page, page_size))
+                # update goblin position every 5 seconds among changed keys
+                now = time.time()
+                if now - last_goblin_jump >= 5:
+                    changed = [k for k, v in current.items() if baseline.get(k) != v]
+                    goblin_key = random.choice(changed) if changed else None
+                    last_goblin_jump = now
+                live.update(make_table(current, baseline, page, page_size, goblin_key))
 
     except KeyboardInterrupt:                # <<< correct scope
         pass
