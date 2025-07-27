@@ -85,6 +85,8 @@ fi
  
 # Enable mouse support to allow clicking on panes to focus them
 tmux set-option -g mouse on 2>/dev/null || true
+# For older tmux versions: enable mouse at the window level as well
+tmux set-window-option -g mouse on 2>/dev/null || true
 
 # If inside an existing tmux session, create a new window; otherwise, create a new session
 if [ -n "${TMUX-}" ]; then
@@ -97,8 +99,13 @@ if [ -n "${TMUX-}" ]; then
   # Create window and split
   tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t "${CURRENT_SESSION}:goblin_chat" "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
+  # Ensure mouse support in goblin_chat window
+  tmux set-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
+  tmux set-window-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
   # Bind 'q' to kill the goblin_chat window without prefix
   tmux bind-key -n q kill-window -t "${CURRENT_SESSION}:goblin_chat"
+  # Bind SPACE to toggle focus between left (pane 0) and right (pane 1)
+  tmux bind-key -n Space if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
   tmux select-layout -t "${CURRENT_SESSION}:goblin_chat" even-horizontal
   tmux select-window -t "${CURRENT_SESSION}:goblin_chat"
   # Wait until goblin_chat window is closed (exit on 'q')
@@ -114,8 +121,13 @@ else
   fi
   tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t goblin_chat "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
+  # Ensure mouse support in goblin_chat session
+  tmux set-option -t goblin_chat -g mouse on 2>/dev/null || true
+  tmux set-window-option -t goblin_chat -g mouse on 2>/dev/null || true
   # Bind 'q' to kill the goblin_chat session without prefix
   tmux bind-key -n q kill-session -t goblin_chat
+  # Bind SPACE to toggle focus between left (pane 0) and right (pane 1)
+  tmux bind-key -n Space if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
   tmux select-layout -t goblin_chat even-horizontal
   tmux attach -t goblin_chat
   exit 0

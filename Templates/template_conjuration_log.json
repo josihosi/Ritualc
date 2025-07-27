@@ -23,21 +23,11 @@
 
       "Description": "CCC Update task description, bit of detail wont hurt",
 
-      "Status": "DDD done",
+      "Expected File tree": ["./File1.txt",'./File2.txt'],
 
-      "Timestamp": "task_timestamp"
+      "Status": "DDD unstarted",
 
-    },
-
-    {
-
-      "ID": "CCC some task ID system",
-
-      "Description": "CCC Update task description, bit of detail wont hurt",
-
-      "Status": "DDD done",
-
-      "Timestamp": "task_timestamp"
+      "Expected codex time [h]": "CCC expected continuation time in hours, . as decimal point."
 
     },
 
@@ -47,9 +37,25 @@
 
       "Description": "CCC Update task description, bit of detail wont hurt",
 
-      "Status": "DDD done",
+      "Expected File tree": ["CCC ./File1.txt","CCC ./File2.txt"],
 
-      "Timestamp": "task_timestamp"
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "CCC expected continuation time in hours, . as decimal point."
+
+    },
+
+    {
+
+      "ID": "CCC some task ID system",
+
+      "Description": "CCC Update task description, bit of detail wont hurt",
+
+      "Expected File tree": ["CCC ./File1.txt",'CCC ./File2.txt'],
+
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "CCC expected continuation time in hours, . as decimal point."
 
     }
 
@@ -71,7 +77,10 @@
 
 },
 
- 
+"Expected File Tree": {
+
+	"CCC ./": "File 1, File 2"
+},
 
   "Goblin Diary":
 
