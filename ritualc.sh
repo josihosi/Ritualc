@@ -1,4 +1,30 @@
 #!/bin/bash
+#set -euo pipefail   # stop on any error or missing variable
+#IFS=$'\n\t'         # safe word-splitting
+
+# Determine role based on argument
+ROLE_TYPE="goblin"
+
+# Argument parsing: now supports '+' and '-' prefixes for flags
+#while getopts ":+:-:cw" opt; do
+while getopts "cw" opt; do
+  case "$opt" in
+    c)
+      # custom message mode: -c "foo bar"
+      MESSAGE="${@:OPTIND}"
+      shift $(( OPTIND - 1 ))   # remove all parsed flags + the `-c`
+      break                     # don’t parse any further options
+      ;;
+    w)
+      ROLE_TYPE="wizard"
+      ;;
+    *)
+      echo "Usage: $0 [-c \"custom message\"] [-w]" >&2
+      exit 1
+      ;;
+  esac
+done
+shift $(( OPTIND - 1 ))  # remove any remaining parsed options
 
 # Ensure Context directory and logs exist
 mkdir -p ./Context
@@ -46,40 +72,33 @@ you to conjure.
 EOF
 )
 
-# Determine input text
-if [[ "$1" == "-c" ]]; then
-    shift
-    MESSAGE="$*"
-else
-    if [ -f "./query.txt" ]; then
-        MESSAGE=$(<./query.txt)
-    else
-        echo "# At your service my liege." > ./query.tx
-        echo "Inside ./query.txt you may burden you may burden us with your desires."
-        ${EDITOR:-micro} ./query.txt  # optional: auto-opens in nano or $EDITOR
-        exit 0
-    fi
+# If -c didn’t set MESSAGE, fall back to query.txt
+if [ -z "${MESSAGE-}" ]; then
+  if [ -f ./query.txt ]; then
+    MESSAGE=$(<./query.txt)
+  else
+    echo "# At your service my liege."   > ./query.txt
+    echo "# Feel free to write your command here." >> ./query.txt
+    ${EDITOR:-micro} ./query.txt
+    exit 0
+  fi
 fi
 
-# Call the role Description
-
-get_role_prompt() {
-    case "$1" in
-        goblin) echo "$ROLE_GOBLIN" ;;
-        wizard) echo "$ROLE_WIZARD" ;;
-        *) echo "Unknown role" ;;
-    esac
-}
-
-ROLE_PROMPT=$(get_role_prompt "goblin")
+ # Choose role prompt
+ if [ "$ROLE_TYPE" = "wizard" ]; then
+   ROLE_PROMPT="$ROLE_WIZARD"
+ else
+   ROLE_PROMPT="$ROLE_GOBLIN"
+ fi
+#ROLE_PROMPT=$(get_role_prompt "goblin")
 #echo "$ROLE_PROMPT"
-# Call Context
 
+# Call Context
 CONTEXT_FILE="./Context/conjuration_log.json"
 #echo "$CONTEXT_FILE"
 CONTEXT_CONTENT=$(<"$CONTEXT_FILE")   # contents, not the filename
 
-SYSTEM_INPUT=$(jq -n --arg sys   "$ROLE_GOBLIN" \
+SYSTEM_INPUT=$(jq -n --arg sys   "$ROLE_PROMPT" \
                    --arg ctx   "$CONTEXT_CONTENT" \
                    --arg user  "$MESSAGE" '
 [
@@ -105,7 +124,14 @@ echo "$SYSTEM_INPUT" > /tmp/system_input.json
 #VIS_PID=$!
 
 # Run Codex phase: launch Goblin Chat in tmux and wait for exit
-/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json
+#/bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json
+
+ echo "Running ${ROLE_TYPE^} Chat..."
+ if [ "$ROLE_TYPE" = "wizard" ]; then
+  /bin/Ritualc/Scripts/wizard_chat.sh /tmp/system_input.json   # + wizard chat
+ else
+  /bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json  # + goblin chat
+ fi
 
 # Pipe through Ollama (Mistral) and update whisper log
 {
