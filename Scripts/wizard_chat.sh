@@ -109,9 +109,9 @@ if [ -n "${TMUX-}" ]; then
   tmux set-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
   tmux set-window-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
   # Bind 'q' to kill the goblin_chat window without prefix
-  tmux bind-key -n q kill-window -t "${CURRENT_SESSION}:goblin_chat"
+  tmux bind-key -n 7 kill-window -t "${CURRENT_SESSION}:goblin_chat"
   # Bind SPACE to toggle focus between left (pane 0) and right (pane 1)
-  tmux bind-key -n Space if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
+  tmux bind-key -n 3 if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
   tmux select-layout -t "${CURRENT_SESSION}:goblin_chat" even-horizontal
   tmux select-window -t "${CURRENT_SESSION}:goblin_chat"
   # Wait until goblin_chat window is closed (exit on 'q')
@@ -131,9 +131,9 @@ else
   tmux set-option -t goblin_chat -g mouse on 2>/dev/null || true
   tmux set-window-option -t goblin_chat -g mouse on 2>/dev/null || true
   # Bind 'q' to kill the goblin_chat session without prefix
-  tmux bind-key -n q kill-session -t goblin_chat
+  tmux bind-key -n 7 kill-session -t goblin_chat
   # Bind SPACE to toggle focus between left (pane 0) and right (pane 1)
-  tmux bind-key -n Space if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
+  tmux bind-key -n 3 if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
   tmux select-layout -t goblin_chat even-horizontal
   tmux attach -t goblin_chat
   exit 0
