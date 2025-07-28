@@ -40,7 +40,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode};
+use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, MouseEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::execute;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config};
@@ -180,7 +180,11 @@ fn wrap_to_lines(s: &str, width: usize) -> Vec<String> {
                 idx += take;
             }
         }
-        // Add all wrapped lines (hyphenation applies, no justification)
+        // Strip all leading whitespace from every wrapped line
+        for line in seg_lines.iter_mut() {
+            *line = line.trim_start().to_string();
+        }
+        // Add wrapped lines
         for line in seg_lines {
             lines.push(line);
         }
@@ -326,12 +330,14 @@ fn draw<'a>(f: &mut Frame<'a>, app: &mut App) {
     .header(
         // Header row with right-aligned key, left-aligned value
         Row::new(vec![
-            vec![Line::styled("Key", Style::default().add_modifier(Modifier::BOLD))
+            vec![Line::styled("KEY", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD | Modifier::UNDERLINED))
                 .alignment(Alignment::Right)],
-            vec![Line::styled("Value", Style::default().add_modifier(Modifier::BOLD))],
-        ])
+            vec![Line::styled(
+                "VALUE", Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+            )],
+        ]).height(2)
     )
-    .block(Block::default().borders(Borders::ALL).title("📜 Conjuration log [Pg Up / Pg Down] [3: Switch Pane / 7: Exit]"))
+    .block(Block::default().borders(Borders::ALL).title("📜 Conjuration log [k, Pg Up /j, Pg Down] [3: Switch Pane / 7: Exit]"))
     .column_spacing(1);
 
     f.render_stateful_widget(table, layout[0], &mut app.table_state);
@@ -394,6 +400,8 @@ fn main() -> io::Result<()> {
     // ---------------------------------------------------------------------
     // Main event-loop
     // ---------------------------------------------------------------------
+    // Ratio of terminal height to scroll on j/k and arrow keys
+    const SCROLL_RATIO: f32 = 0.25;
     loop {
         // Draw UI
         terminal.draw(|f| draw(f, &mut app))?;
@@ -403,17 +411,46 @@ fn main() -> io::Result<()> {
         // little creature.
         if event::poll(Duration::from_millis(250))? {
             match event::read()? {
+                // Keyboard events
                 Event::Key(key) => match key.code {
                     // ----- quit ------------------------------------------------
                     KeyCode::Char('q') | KeyCode::Char('7') => break,
 
                     // ----- scrolling (vim style) ------------------------------
-                    KeyCode::Char('j') => scroll_relative(&mut app, (terminal.size()?.height as f32 * 0.10) as i64),
-                    KeyCode::Char('k') => scroll_relative(&mut app, -((terminal.size()?.height as f32 * 0.10) as i64)),
+                    // Vim-style scroll: move by a fraction of terminal height (at least 1 row)
+                    KeyCode::Char('j') => {
+                        // Pan down by one line
+                        let h = terminal.size()?.height;
+                        let page = page_height(h) as usize;
+                        let len = app.current.len();
+                        let max_off = len.saturating_sub(page);
+                        let new_off = app.table_state.offset().saturating_add(1).min(max_off);
+                        *app.table_state.offset_mut() = new_off;
+                        // Keep selection in sync to prevent auto-reset
+                        app.table_state.select(Some(new_off));
+                    }
+                    KeyCode::Char('k') => {
+                        // Pan up by one line
+                        let new_off = app.table_state.offset().saturating_sub(1);
+                        *app.table_state.offset_mut() = new_off;
+                        // Keep selection in sync to prevent auto-reset
+                        app.table_state.select(Some(new_off));
+                    }
 
                     // ----- page up / down -------------------------------------
                     KeyCode::PageDown => scroll_relative(&mut app, page_height(terminal.size()?.height)),
                     KeyCode::PageUp => scroll_relative(&mut app, -page_height(terminal.size()?.height)),
+                    // Arrow keys: scroll by same fraction (at least 1 row)
+                    KeyCode::Down => {
+                        let h = terminal.size()?.height as f32;
+                        let step = (h * SCROLL_RATIO).ceil() as i64;
+                        scroll_relative(&mut app, step.max(1));
+                    }
+                    KeyCode::Up => {
+                        let h = terminal.size()?.height as f32;
+                        let step = (h * SCROLL_RATIO).ceil() as i64;
+                        scroll_relative(&mut app, -step.max(1));
+                    }
 
                     // ----- next tmux pane -------------------------------------
                     KeyCode::Char('3') => {
@@ -423,10 +460,15 @@ fn main() -> io::Result<()> {
                     }
                     _ => {}
                 },
-                // Ignore resize events – ratatui handles them automatically on
-                // the next draw call.
-                Event::Resize(_, _) => {}
-                _ => {}
+                // Mouse scroll events
+                Event::Mouse(me) => match me.kind {
+                    MouseEventKind::ScrollDown => scroll_relative(&mut app, 1),
+                    MouseEventKind::ScrollUp => scroll_relative(&mut app, -1),
+                    _ => {}
+                },
+                // Ignore resize and other events
+                Event::Resize(_, _) => {},
+                _ => {},
             }
         }
 
