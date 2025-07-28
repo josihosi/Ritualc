@@ -1,0 +1,26 @@
+[package]
+name = "jsonwatch_render_rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# terminal backend & input
+crossterm = "0.27"
+
+# reactive file-watcher
+notify = "6.1"
+
+# terminal UI framework (fork of tui-rs)
+ratatui  = "0.26"
+
+# colouring, table, etc. are inside ratatui
+
+# random emoji hop
+rand     = "0.8"
+
+# JSON flatten / diff
+serde       = { version = "1.0", features = ["derive"] }
+serde_json  = { version = "1.0", features = ["preserve_order"] }
+indexmap = "2"

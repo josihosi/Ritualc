@@ -1,0 +1,36 @@
+## Proposed code changes for ritualc.sh
+
+- Update getopts invocation to include '-r' flag:
+-  while getopts "cw" opt; do
++  while getopts "cwr" opt; do
+
+- Insert new case for '-r' in option parsing:
+-    r) RUN_RITUAL=true ;;
+
+- Modify default usage message to reflect '-r':
+-    echo "Usage: $0 [-c \"custom message\"] [-w]" >&2
++    echo "Usage: $0 [-c \"custom message\"] [-w] [-r]" >&2
+
+- After shifting parsed options, add ritual orchestration block:
+-    if [ "${RUN_RITUAL:-false}" = true ]; then
+-      echo "Starting ritual orchestration..."
+-      /bin/Ritualc/Scripts/goblin_ritual_A.sh
+-      /bin/Ritualc/Scripts/wizard_ritual.sh
+-      /bin/Ritualc/Scripts/goblin_ritual_B.sh
+-      exit 0
+-    fi
+
+- Replace direct chat invocation with capture and summarization:
+-  OLD:
+-    if [ "$ROLE_TYPE" = "wizard" ]; then
+-      /bin/Ritualc/Scripts/wizard_chat.sh /tmp/system_input.json
+-    else
+-      /bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json
+-    fi
+-    { echo "$Local_Prompt"; cat ./Context/.whispers.txt; } | ollama run tinyllama > /tmp/.whispers.tmp && mv /tmp/.whispers.tmp ./Context/.whispers.txt
++  NEW:
++    CHAT_OUTPUT=$( [ "$ROLE_TYPE" = "wizard" ] \
++      && /bin/Ritualc/Scripts/wizard_chat.sh /tmp/system_input.json \
++      || /bin/Ritualc/Scripts/goblin_chat.sh /tmp/system_input.json )
++    printf "%s\n" "$CHAT_OUTPUT" >> ./Context/.whispers.txt
++    { echo "$Local_Prompt"; cat ./Context/.whispers.txt; } | ollama run mistral > /tmp/.whispers.tmp && mv /tmp/.whispers.tmp ./Context/.whispers.txt

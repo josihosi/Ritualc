@@ -43,8 +43,10 @@ RULE=$(cat <<EOF
 Instructions for Wizard:
 
 You’re supposed to edit ./Context/conjuration_log.json.
-Fill in the keys, according to the Dark Lords wishes.
-If you don't know what he is talking about, you may read ./Context/.whispers.txt
+Edit in the keys, according to the Dark Lords wishes.
+The Goblin who rote this .json is crafty, but still could have made mistakes.
+Though ancient he may be-- Goblin oblin intelligenze is limited.
+If you don't know what they are talking about, you may read ./Context/.whispers.txt
 
 You are not permitted to edit any other file, which is only permitted in a ritual.
 
@@ -54,6 +56,9 @@ you may rewrite contents completely..
 $(for k in "${!INSTR[@]}"; do
     printf "  • %s → %s\n" "$k" "${INSTR[$k]}"
   done)
+
+Locked keys are not for you to touch.
+A Wizard always studies his surroundings first.
 EOF
 )
 
@@ -98,7 +103,7 @@ if [ -n "${TMUX-}" ]; then
     tmux kill-window -t "${CURRENT_SESSION}:goblin_chat"
   fi
   # Create window and split
-  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_renderw.py\" \"$TEMPLATE\"; exec bash'"
+  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'exec \"$SCRIPT_DIR/jsonwatch_render_rust\" \"$TEMPLATE\" \"w\"; exec bash'"
   tmux split-window -h -d -t "${CURRENT_SESSION}:goblin_chat" "bash -lc 'codex -m o3 --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
   # Ensure mouse support in goblin_chat window
   tmux set-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
@@ -120,7 +125,7 @@ else
   if tmux has-session -t goblin_chat 2>/dev/null; then
     tmux kill-session -t goblin_chat
   fi
-  tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_renderw.py\" \"$TEMPLATE\"; exec bash'"
+  tmux new-session -d -s goblin_chat "bash -lc 'exec \"$SCRIPT_DIR/jsonwatch_render_rust\" \"$TEMPLATE\" \"w\"; exec bash'"
   tmux split-window -h -d -t goblin_chat "bash -lc 'codex -m o3 --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
   # Ensure mouse support in goblin_chat session
   tmux set-option -t goblin_chat -g mouse on 2>/dev/null || true

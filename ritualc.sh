@@ -7,7 +7,9 @@ ROLE_TYPE="goblin"
 
 # Argument parsing: now supports '+' and '-' prefixes for flags
 #while getopts ":+:-:cw" opt; do
-while getopts "cw" opt; do
+# Added support for -r (run ritual orchestration)
+RUN_RITUAL=false
+while getopts "cwr" opt; do
   case "$opt" in
     c)
       # custom message mode: -c "foo bar"
@@ -18,13 +20,32 @@ while getopts "cw" opt; do
     w)
       ROLE_TYPE="wizard"
       ;;
+    r)
+      RUN_RITUAL=true
+      ;;
     *)
-      echo "Usage: $0 [-c \"custom message\"] [-w]" >&2
+      echo "Usage: $0 [-c \"custom message\"] [-w] [-r]" >&2
       exit 1
       ;;
   esac
 done
 shift $(( OPTIND - 1 ))  # remove any remaining parsed options
+
+# ---------------------------------------------------------
+# If -r was provided, orchestrate the ritual helpers and exit.
+# ---------------------------------------------------------
+if [ "$RUN_RITUAL" = true ]; then
+  echo "Starting ritual orchestration..."
+
+  # Use the canonical /bin/Ritualc path that mirrors this repository
+  RITUAL_SCRIPTS_DIR="/bin/Ritualc/Scripts"
+
+  bash "$RITUAL_SCRIPTS_DIR/goblin_ritual_A.sh"
+  bash "$RITUAL_SCRIPTS_DIR/wizard_ritual.sh"
+  bash "$RITUAL_SCRIPTS_DIR/goblin_ritual_B.sh"
+
+  exit 0
+fi
 
 # Ensure Context directory and logs exist
 mkdir -p ./Context

@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+import sys, json, time, os, math, random
+from contextlib import contextmanager          # <<< NEW
+from rich.table import Table
+from rich.console import Console
+from rich.live import Live
+
+# ---------- platform‑agnostic key reader ------------------------
+def _nop(): return None
+
+try:                                  # ── POSIX ────────────────
+    import termios, tty, select
+    def _posix_read_key():
+        fd = sys.stdin.fileno()
+        if not select.select([fd], [], [], 0)[0]:
+            return None
+        ch1 = sys.stdin.read(1)
+        if ch1 != '\x1b':
+            return ch1
+        if select.select([fd], [], [], 0)[0] and sys.stdin.read(1) == '[':
+            ch3 = sys.stdin.read(1) if select.select([fd], [], [], 0)[0] else ''
+            return {'C': 'RIGHT', 'D': 'LEFT'}.get(ch3)
+        return None
+
+    @contextmanager
+    def raw_mode_if_tty():
+        if not sys.stdin.isatty():
+            yield; return
+        fd, prev = sys.stdin.fileno(), termios.tcgetattr(sys.stdin.fileno())
+        try:
+            tty.setcbreak(fd); yield
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, prev)
+
+    read_key = _posix_read_key if sys.stdin.isatty() else _nop
+
+except ImportError:                     # ── Windows ─────────────
+    import msvcrt
+    def _win_read_key():
+        if not msvcrt.kbhit(): return None
+        ch = msvcrt.getwch()
+        if ch in ('\x00', '\xe0'):           # arrows / Fn keys
+            code = msvcrt.getwch()
+            return {'M': 'RIGHT', 'K': 'LEFT'}.get(code)
+        return ch
+    read_key = _win_read_key if sys.stdin.isatty() else _nop
+
+    @contextmanager
+    def raw_mode_if_tty():
+        yield                                 # nothing extra
+
+# ---------- helpers --------------------------------------------
+
+
+def flatten(d, prefix=''):
+    if isinstance(d, dict):
+        return {k2: v2 for k, v in d.items()
+                for k2, v2 in flatten(v, f"{prefix}{k} → ").items()}
+    if isinstance(d, list):
+        return {k2: v2 for i, v in enumerate(d)
+                for k2, v2 in flatten(v, f"{prefix}{i} → ").items()}
+    return {prefix.rstrip(" → "): str(d)}
+
+import math, textwrap
+#from rich.measure import Measurement
+#from rich.text import Text
+
+# Rough number of lines that the table chrome (title, borders, header …) takes.
+# Border layout consumes at least the following rows:
+#   • 1 line  – table top border
+#   • 1 line  – header row ("Key | Value")
+#   • 1 line  – header separator (heavy rule below header)
+#   • 1 line  – table bottom border
+# In addition, the title itself can wrap over several lines depending on the
+# terminal width.  For simplicity – and to stay on the safe side – we allocate
+# two extra rows for the (potentially wrapped) title.  Taken together this
+# means we should reserve 6 rows before we start laying out any data rows.
+#
+# Reserving a couple more rows than strictly necessary is preferable to
+# reserving too few rows: in the former case we merely show a handful fewer
+# data rows, but in the latter case the table spills past the bottom of the
+# pane and causes jittery scrolling.
+_FRAME_OVERHEAD = 6
+
+
+def _wrapped_height(txt: str, width: int) -> int:
+    """Return how many terminal rows *txt* will occupy inside a table cell.
+
+    The *width* parameter is the **maximum** column width that we pass to Rich.
+    Rich allocates a single space of padding on either side of the cell, so
+    the actual space available for the content is two characters smaller.
+    In addition, we guard against very narrow columns where the subtraction
+    could make *width* negative or zero.
+    """
+    inner_width = max(1, width - 2)  # account for one-space padding on both sides
+    lines = txt.splitlines() or [""]
+    return sum(math.ceil(len(line) / inner_width) for line in lines)
+
+def estimate_row_height(key, value, key_w, val_w) -> int:
+    return max(_wrapped_height(str(key),   key_w),
+               _wrapped_height(str(value), val_w))
+ 
+
+def paginate_keys_by_height(keys, curr, max_rows, key_w, val_w):
+    page_keys, budget = [], max_rows - _FRAME_OVERHEAD
+    for k in keys:
+        v   = curr.get(k, "")
+        ht  = estimate_row_height(k, v, key_w, val_w)
+        if budget - ht < 0:
+            break
+        budget -= ht
+        page_keys.append(k)
+    return page_keys
+
+def total_pages(keys, curr, key_w, val_w, max_rows):
+    """Walk the whole list once to find out how many pages we need."""
+    pages, idx = 0, 0
+    while idx < len(keys):
+        slice_ = paginate_keys_by_height(keys[idx:], curr,
+                                         max_rows, key_w, val_w)
+        idx += len(slice_)
+        pages += 1 if slice_ else 0
+    return max(pages, 1)
+
+def make_table(keys, curr, base, goblin_key,
+               key_w, val_w, page: int, total_pages: int):
+    tbl = Table(
+        title=f"📜 Conjuration Snapshot — page {page}/{total_pages}\n\\[n/p a/d ←/→]  \\[3 Switch, 7 Exit]",
+        expand=True,
+    )
+    tbl.add_column("Key",   style="bold cyan",
+                   overflow="fold", max_width=key_w, justify="left")
+    tbl.add_column("Value", justify="left",
+                   overflow="fold", max_width=val_w)
+
+    for k in keys:
+        val = curr[k]
+        if base.get(k) != val:
+            disp = f"{val} 👺" if k == goblin_key else val
+            tbl.add_row(k, f"[yellow]{disp}[/yellow]")
+        else:
+            tbl.add_row(k, val)
+    return tbl
+
+
+# ---------- main -----------------------------------------------
+FILE = sys.argv[1] if len(sys.argv) > 1 else './Context/conjuration_log.json'
+BASE = sys.argv[2] if len(sys.argv) > 2 else '/tmp/jsonwatch_baseline.json'
+page_size, page = 20, 0
+
+with open(FILE) as f: current = flatten(json.load(f))
+if os.path.exists(BASE):
+    with open(BASE) as f: baseline = flatten(json.load(f))
+else:
+    baseline = current.copy()
+    with open(BASE, "w") as f: json.dump(baseline, f)
+
+console = Console()
+
+with raw_mode_if_tty():  # <<< use new CM
+    # initialize goblin jump state
+    goblin_key = None
+    last_goblin_jump = time.time()
+    try:
+        term_height = console.size.height
+        term_width  = console.size.width
+        key_width   = term_width // 3
+        value_width = term_width - key_width - 1
+        
+        usable_rows = term_height - 1
+
+        keys = list(current.keys())
+        page_cursor = 0
+        console.line()
+        console.line()
+        with Live(console=console, refresh_per_second=2, screen=True) as live:
+            visible_keys = []
+            while True:
+                time.sleep(0.1)
+                key = read_key()
+
+                # ── handle navigation only if a key was pressed ───────────────
+                if key in ('n', 'd', 'RIGHT'):
+                    page_cursor = min(
+                        page_cursor + (len(visible_keys) or 1), len(keys) - 1
+                    )
+                elif key in ('p', 'a', 'LEFT'):
+                    page_cursor = max(
+                        page_cursor - (len(visible_keys) or 1), 0
+                    )
+ 
+                # ── refresh data & repaint every tick ────────────────────────
+                
+
+                with open(FILE) as f:
+                    current = flatten(json.load(f))
+
+                now = time.time()
+                if now - last_goblin_jump >= 5:
+                    changed = [k for k, v in current.items() if baseline.get(k) != v]
+                    goblin_key = random.choice(changed) if changed else None
+                    last_goblin_jump = now
+                    
+                visible_keys = paginate_keys_by_height(
+                    keys[page_cursor:], current,
+                    max_rows=usable_rows, key_w=key_width, val_w=value_width
+                )
+
+                page_cnt = total_pages(
+                    keys, current, key_width, value_width, usable_rows
+                )
+
+                if visible_keys:
+                    consumed = total_pages(
+                        keys[:page_cursor], current,
+                        key_width, value_width, usable_rows
+                    )
+                    curr_page = consumed + 1
+                else:                       # empty slice → stay on last page
+                    curr_page = page_cnt
+
+                table = make_table(visible_keys, current, baseline,
+                                   goblin_key, key_w=key_width, val_w=value_width,
+                                   page=curr_page, total_pages=page_cnt)
+                
+                live.update(table)
+    except KeyboardInterrupt:
+        pass

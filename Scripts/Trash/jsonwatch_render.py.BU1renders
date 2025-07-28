@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Scrollable live‑diff JSON viewer — ScrollView + Rich Table (Textual 5‑compatible)
+
+This tool watches a JSON file, highlights changes, and keeps a scrollable
+viewport steady while updating in real time.
+
+Key points
+~~~~~~~~~~
+* **ScrollView + Static**: one Static child inside the ScrollView holds the
+  rendered Rich Table. We simply call `Static.update()` on refresh, so we never
+  break the scroll position.
+* **Goblin 🧌 or Wizard 🧙‍♂️** hops to a random changed row every 5 s.
+* **Key bindings**: 7 → quit · 3 → cycle tmux pane.
+
+Run
+---
+```bash
+python3 jsonwatch_scroll.py [FILE] [CREATURE]
+# FILE      – JSON file to watch (default: ./Context/conjuration_log.json)
+# CREATURE  – "w" to use a wizard instead of a goblin (optional)
+```
+"""
+
+from __future__ import annotations
+
+import json
+import random
+import subprocess
+import sys
+import textwrap
+from pathlib import Path
+from typing import Any, Dict
+
+from rich.table import Table
+from textual.app import App, ComposeResult
+from textual.containers import Container
+from textual.reactive import var
+
+# ---------------------------------------------------------------------------
+# Handle API changes between Textual ≤0.44 and Textual 5.x
+# ---------------------------------------------------------------------------
+try:  # Textual ≤ 0.44
+    from textual.widgets import ScrollView, Static
+except ImportError:  # Textual 5+
+    from textual.scroll_view import ScrollView  # type: ignore
+    from textual.widgets import Static  # type: ignore
+
+###############################################################################
+# Helper: flatten nested JSON -------------------------------------------------
+###############################################################################
+
+def flatten(d: Any, prefix: str = "") -> Dict[str, str]:
+    """Recursively flatten dicts/lists, preserving insertion order."""
+    if isinstance(d, dict):
+        result: Dict[str, str] = {}
+        for k, v in d.items():
+            result.update(flatten(v, f"{prefix}{k} → "))
+        return result
+    if isinstance(d, list):
+        result: Dict[str, str] = {}
+        for i, v in enumerate(d):
+            result.update(flatten(v, f"{prefix}{i} → "))
+        return result
+    return {prefix.rstrip(" → "): str(d)}
+
+###############################################################################
+# Main App --------------------------------------------------------------------
+###############################################################################
+
+class JsonWatchApp(App):
+    """TUI app that live‑diffs a JSON file in a scrollable view."""
+
+    BINDINGS = [
+        ("7", "quit", "Quit"),
+        ("3", "next_pane", "Next tmux pane"),
+    ]
+
+    # reactive config
+    file_path: Path = var(Path("./Context/conjuration_log.json"))
+    base_path: Path = var(Path("/tmp/conjuration_log.json"))
+    creature: str = var("g")  # "g" → goblin · "w" → wizard
+
+    refresh_s: float = 1.0
+    hop_s: float = 5.0
+    key_frac: float = 0.35  # fraction of terminal width for key column
+
+    # ---------------------------------------------------------------------
+    # Compose & mount lifecycle
+    # ---------------------------------------------------------------------
+
+    def compose(self) -> ComposeResult:
+        """Create the ScrollView container."""
+        self.scroll = ScrollView()
+        yield Container(self.scroll)
+
+    async def on_mount(self) -> None:
+        """Mount the Static child and set up timers."""
+        # child where the Rich Table will live
+        self.table_static = Static()
+        await self.scroll.mount(self.table_static)
+
+        # baseline snapshot
+        try:
+            self.base_path.write_bytes(self.file_path.read_bytes())
+        except FileNotFoundError:
+            self.table_static.update(
+                f"[red]File not found:[/red] {self.file_path}")
+            return
+        with self.base_path.open() as f:
+            self._baseline = flatten(json.load(f))
+
+        self._current: Dict[str, str] = {}
+        self._creature_key: str | None = None
+
+        # first draw & recurring tasks
+        self.refresh_table()
+        self.set_interval(self.refresh_s, self.refresh_table)
+        self.set_interval(self.hop_s, self.jump_creature)
+
+    # ------------------------------------------------------------------
+    # Actions
+    # ------------------------------------------------------------------
+
+    def action_next_pane(self) -> None:
+        subprocess.run(["tmux", "select-pane", "-t", ":.+"], check=False)
+
+    # ------------------------------------------------------------------
+    # Table build / refresh
+    # ------------------------------------------------------------------
+
+    def _build_table(self) -> Table:
+        """Return a Rich Table representing the current JSON diff."""
+        term_w = self.size.width or 120
+        key_w = int(term_w * self.key_frac)
+        val_w = term_w - key_w - 4  # padding allowance
+
+        tbl = Table(expand=True, show_header=True, header_style="bold")
+        tbl.add_column("Key", style="cyan", no_wrap=True, width=key_w)
+        tbl.add_column("Value", width=val_w, overflow="fold")
+
+        emoji = "🧙‍♂️" if self.creature == "w" else "🧌"
+        for k, v in self._current.items():
+            changed = self._baseline.get(k) != v
+            tag = emoji if changed and k == self._creature_key else ""
+            wrapped_val = textwrap.fill(f"{v}{tag}", val_w)
+            tbl.add_row(k, f"[yellow]{wrapped_val}[/yellow]" if changed else wrapped_val)
+        return tbl
+
+    def refresh_table(self) -> None:
+        """Update the Static child while preserving scroll position."""
+        keep_y = getattr(self.scroll, "y", 0)
+
+        try:
+            with self.file_path.open() as f:
+                self._current = flatten(json.load(f))
+        except Exception as exc:
+            self.table_static.update(f"[red]Error:[/red] {exc}")
+            return
+
+        self.table_static.update(self._build_table())
+
+        # restore viewport after layout settles
+        self.call_after_refresh(lambda: self.scroll.scroll_to(y=keep_y))
+
+    # ------------------------------------------------------------------
+    # Creature hop
+    # ------------------------------------------------------------------
+
+    def jump_creature(self) -> None:
+        changed_keys = [k for k, v in self._current.items()
+                        if self._baseline.get(k) != v]
+        self._creature_key = random.choice(changed_keys) if changed_keys else None
+        self.refresh_table()
+
+###############################################################################
+# Entry‑point ----------------------------------------------------------------
+###############################################################################
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        JsonWatchApp.file_path = Path(sys.argv[1])
+    if len(sys.argv) > 2:
+        JsonWatchApp.creature = sys.argv[2].lower()[:1]
+
+    JsonWatchApp().run()

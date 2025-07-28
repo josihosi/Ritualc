@@ -79,7 +79,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
  # Ensure tmux is available
  if ! command -v tmux > /dev/null 2>&1; then
-  echo "Error: tmux is required for Goblin Chat split. Please install tmux." >&2
+  echo "Error: tmux is required for Goblin Chat. Please install tmux." >&2
   exit 1
 fi
  
@@ -97,15 +97,15 @@ if [ -n "${TMUX-}" ]; then
     tmux kill-window -t "${CURRENT_SESSION}:goblin_chat"
   fi
   # Create window and split
-  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
+  tmux new-window -n goblin_chat -t "$CURRENT_SESSION" "bash -lc 'exec \"$SCRIPT_DIR/jsonwatch_render_rust\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t "${CURRENT_SESSION}:goblin_chat" "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
   # Ensure mouse support in goblin_chat window
   tmux set-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
   tmux set-window-option -t "${CURRENT_SESSION}" -g mouse on 2>/dev/null || true
   # Bind 'q' to kill the goblin_chat window without prefix
-  tmux bind-key -n q kill-window -t "${CURRENT_SESSION}:goblin_chat"
+  tmux bind-key -n 7 kill-window -t "${CURRENT_SESSION}:goblin_chat"
   # Bind SPACE to toggle focus between left (pane 0) and right (pane 1)
-  tmux bind-key -n Space if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
+  tmux bind-key -n 3 if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
   tmux select-layout -t "${CURRENT_SESSION}:goblin_chat" even-horizontal
   tmux select-window -t "${CURRENT_SESSION}:goblin_chat"
   # Wait until goblin_chat window is closed (exit on 'q')
@@ -119,15 +119,15 @@ else
   if tmux has-session -t goblin_chat 2>/dev/null; then
     tmux kill-session -t goblin_chat
   fi
-  tmux new-session -d -s goblin_chat "bash -lc 'python3 \"$SCRIPT_DIR/jsonwatch_render.py\" \"$TEMPLATE\"; exec bash'"
+  tmux new-session -d -s goblin_chat "bash -lc 'exec \"$SCRIPT_DIR/jsonwatch_render_rust\" \"$TEMPLATE\"; exec bash'"
   tmux split-window -h -d -t goblin_chat "bash -lc 'codex --full-auto \"read ./chat.txt and follow instructions.\" | tee ./Context/.whispers.txt; rm ./chat.txt; exec bash'"
   # Ensure mouse support in goblin_chat session
   tmux set-option -t goblin_chat -g mouse on 2>/dev/null || true
   tmux set-window-option -t goblin_chat -g mouse on 2>/dev/null || true
   # Bind 'q' to kill the goblin_chat session without prefix
-  tmux bind-key -n q kill-session -t goblin_chat
+  tmux bind-key -n 7 kill-session -t goblin_chat
   # Bind SPACE to toggle focus between left (pane 0) and right (pane 1)
-  tmux bind-key -n Space if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
+  tmux bind-key -n 3 if-shell -F '#{==:#{pane_index},0}' 'select-pane -t 1' 'select-pane -t 0'
   tmux select-layout -t goblin_chat even-horizontal
   tmux attach -t goblin_chat
   exit 0
