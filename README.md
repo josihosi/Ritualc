@@ -7,6 +7,8 @@ Ritualc tries to set up a workflow, currently wrapping Codex CLI, with which to 
 ritualc.sh -c initiates the Project and opens a chat for planning phase. ./Context/conjuration_log.json is an all purpose template for Project planning. -c is supposed to be a chat, where you simply plan, not yet enact any scripting. You can see all changes to  the log live, and discuss them with Codex.
 ritualc.sh -r initiates three Codex CLI prompts in a row. The first transfers all tasks that you want to initiate into a more detailed ritual_log_tmp.json for implementation. The second calls a smarter model, to code. The third initiates a round of feedback, so you know what happened. The Rituals also git commit, automatically.
 
+![Ritualc][Screenshot_ritualc.png]
+
 It.... compiles. Idk, Codex loves to skip steps and generally is lazy sometimes. You do have to remind it about tasks, every time. 
 However, this could improve your workflow too, you could try removing all the stuff about Wizards and Goblins.
 I only wrote this, because a Ghost posessed me and made me do it, anyways.
