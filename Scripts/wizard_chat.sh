@@ -45,8 +45,7 @@ Instructions for Wizard:
 You’re supposed to edit ./Context/conjuration_log.json.
 Edit in the keys, according to the Dark Lords wishes.
 The Goblin who rote this .json is crafty, but still could have made mistakes.
-Though ancient he may be-- Goblin oblin intelligenze is limited.
-If you don't know what they are talking about, you may read ./Context/.whispers.txt
+Though ancient he may be-- Goblin intelligence is limited.
 
 You are not permitted to edit any other file, which is only permitted in a ritual.
 
@@ -64,7 +63,7 @@ EOF
 
  # 👇 Build the rule message as JSON
  #RULE_JSON=$(jq -n --arg rule "$RULE" '{ "role": "system", "content": $rule }')
- RULE_JSON=$(jq -n --arg rule "$RULE" '[{ "role": "system", "content": $rule }]')
+ RULE_JSON=$(jq -n --arg rule "$RULE" '[{ "role": "Codex Rules", "content": $rule }]')
 
  # 👇 Merge the input JSON array and the rule message
  FULL_INPUT=$(jq -s 'add' \

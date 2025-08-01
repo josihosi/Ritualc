@@ -4,10 +4,6 @@ IFS=$'\n\t'         # safe word-splitting
 
 #echo "Goblin invoked"
 
-if [ ! -f ./Context/conjuration_log.json ]; then
-  cp /bin/Ritualc/Templates/template_conjuration_log.json ./Context/conjuration_log.json
-fi
-
 SYSTEM_INPUT_FILE="$1"  # Read the passed persona JSON
 #echo "System input file $SYSTEM_INPUT_FILE"
 SYSTEM_CONTENT=$(<"$SYSTEM_INPUT_FILE")
@@ -42,8 +38,7 @@ RULE=$(cat <<EOF
 Instructions for Goblin:
 
 You’re supposed to edit ./Context/conjuration_log.json.
-Fill in the keys, according to the Dark Lords wishes.
-If you don't know what he is talking about, you may read ./Context/.whispers.txt
+Update ALL unlocked keys, according to the Dark Lords wishes.
 
 You are not permitted to edit any other file, which is only permitted in a ritual.
 
@@ -58,7 +53,7 @@ EOF
 
  # 👇 Build the rule message as JSON
  #RULE_JSON=$(jq -n --arg rule "$RULE" '{ "role": "system", "content": $rule }')
- RULE_JSON=$(jq -n --arg rule "$RULE" '[{ "role": "system", "content": $rule }]')
+ RULE_JSON=$(jq -n --arg rule "$RULE" '[{ "role": "Codex Rules", "content": $rule }]')
 
  # 👇 Merge the input JSON array and the rule message
  FULL_INPUT=$(jq -s 'add' \

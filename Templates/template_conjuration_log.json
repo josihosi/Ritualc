@@ -79,7 +79,7 @@
 
 "Expected File Tree": {
 
-	"CCC ./": "File 1, File 2"
+	"CCC ./": "CCC Expected file tree by project completion: File 1, File 2"
 },
 
   "Goblin Diary":
