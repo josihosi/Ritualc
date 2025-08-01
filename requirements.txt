@@ -1,3 +1,4 @@
 # Project dependencies
 rich
 textual>=5.0.0
+OpenAI Codex
