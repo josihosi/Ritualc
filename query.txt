@@ -1,8 +1,1 @@
-Hello!
-I want to fix how whispers.txt is handled in ritualc.sh. Whispers whould be codex output plus the previous whisper.txt sent through mistral to summarize and replace .whispers.txt again.
-
-Also, I want to include -r functionality with ritualc.sh, which calls a series of goblin and wizard calls, with their own Scripts/goblin_ritual_A.sh, wizard_ritual.sh, goblin_ritual_B.sh
-which get called in this order. Goblin to check conjuration_log.json and ritual_log.json; Wizard to follow conjuration_log.json, pick two tasks and do them; 
-Then Goblin revises again, what has changed, via git diff logs, and updates the ritual_log, as well as the conjuration_log.
-
-Propose code changes, add a file with lines to be removed and added marked with +/- in a file called ./.proposed_code_changes.txt.
+We need to prepare this codebase for pushing to Github. What do we need to do? I can think of .gitignore, Readme.md, License. Any more?

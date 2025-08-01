@@ -1,109 +1,123 @@
 {
-  "Project Name": "Dark Ritual Automation",
+  "Project Name": "GitHub Repository Setup",
+
   "Created": "created",
+
   "Last Updated": "last_update",
-  "Summary": "Goblin initiates by reading conjuration and ritual logs, Wizard executes assigned tasks, then Goblin reviews git diffs and updates ritual and conjuration logs. ritualc.sh automates whispers summarization and orchestrates goblin_ritual_A.sh, wizard_ritual.sh, and goblin_ritual_B.sh.",
-  "Success Definition": "ritualc.sh correctly summarizes previous whispers using Mistral, maintains .whispers.txt, and executes goblin and wizard rituals in order with accurate log updates. Conjuration and ritual logs should reflect completed tasks with timestamps.",
-  "Sessions": [
-    "session_20250724_0900",
-    "session_20250723_1530"
-  ],
+
+  "Summary": "Set up the repository for GitHub by adding a .gitignore, README.md, and LICENSE file, making it ready for public release.",
+
+  "Success Definition": "A public GitHub repository is created containing the codebase with a .gitignore, README.md with project overview and usage instructions, and a LICENSE file, with no extraneous files tracked.",
+
+ 
+
+"Sessions": ["session_20250724_0900", "session_20250723_1530"],
+
+ 
+
   "Tasks": [
+
     {
-      "ID": "RIT-001",
-      "Description": "Implement whisper summarization in ritualc.sh: call appropriate chat script to generate output, append to ./Context/.whispers.txt, summarize combined history via Mistral, and update the whispers file.",
-      "Expected File tree": [
-        "ritualc.sh",
-        "Context/.whispers.txt",
-        "Scripts/goblin_chat.sh",
-        "Scripts/wizard_chat.sh"
-      ],
-      "Status": "unstarted",
-      "Expected codex time [h]": "2.5"
+
+      "ID": "T001",
+
+      "Description": "Create and configure a .gitignore file to exclude unnecessary files from the repository.",
+
+      "Expected Sub Tasks": ["Task definition > ./File1.txt","Task definition > ./File2.txt"],
+
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "0.25"
+
     },
+
     {
-      "ID": "RIT-002",
-      "Description": "Implement -r flag in ritualc.sh to orchestrate scripts: call Scripts/goblin_ritual_A.sh, Scripts/wizard_ritual.sh, and Scripts/goblin_ritual_B.sh in order and exit.",
-      "Expected File tree": [
-        "ritualc.sh",
-        "Scripts/goblin_ritual_A.sh",
-        "Scripts/wizard_ritual.sh",
-        "Scripts/goblin_ritual_B.sh"
-      ],
-      "Status": "unstarted",
-      "Expected codex time [h]": "3.0"
+
+      "ID": "T002",
+
+      "Description": "Write a README.md with project overview, installation instructions, and usage examples.",
+
+      "Expected Sub Tasks": ["Task definition > ./File1.txt","Task definition > ./File2.txt"],
+      
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "1.0"
+
     },
+
     {
-      "ID": "RIT-003",
-      "Description": "Generate ./.proposed_code_changes.txt containing diff-style markup of changes required in ritualc.sh.",
-      "Expected File tree": [
-        ".proposed_code_changes.txt"
-      ],
-      "Status": "unstarted",
-      "Expected codex time [h]": "1.5"
+
+      "ID": "T003",
+
+      "Description": "Add a LICENSE file (MIT) to define the project’s terms of use.",
+
+      "Expected Sub Tasks": ["Task definition > ./File1.txt","Task definition > ./File2.txt"],
+      
+      "Status": "DDD unstarted",
+
+      "Expected codex time [h]": "0.25"
+
     }
+
   ],
-  "File Tree": {
-    "Scripts/": [
-      "goblin_chat.sh",
-      "jsonwatch.py",
-      "jsonwatch.sh",
-      "jsonwatch_render.py",
-      "jsonwatch_renderw.py",
-      "query.tx",
-      "wizard_chat.sh"
-    ],
-    "Templates/": [
-      "template_conjuration_log.json",
-      "template_ritual_log.json"
-    ],
-    "USED_FILES.md": null,
-    "query.txt": null,
-    "ritualc.sh": null
-  },
+
+ 
+
+"File Tree": {
+
+  "dir1/": ["file1.py", "file2.py", "file3.py"],
+
+  "dir2/": ["file5.py", "file6.py"],
+
+  "dir3/": ["file7.py", "file8.py"],
+
+  "README.md": null,
+
+  "requirements.txt": null
+
+},
+
   "Expected File Tree": {
-    "./": [
-      "ritualc.sh",
-      "query.txt",
-      "USED_FILES.md"
-    ],
-    "Context/": [
-      "conjuration_log.json",
-      "ritual_log.json",
-      ".whispers.txt"
-    ],
-    "Scripts/": [
-      "goblin_chat.sh",
-      "wizard_chat.sh",
-      "goblin_ritual_A.sh",
-      "wizard_ritual.sh",
-      "goblin_ritual_B.sh",
-      "jsonwatch.py",
-      "jsonwatch.sh",
-      "jsonwatch_render.py",
-      "jsonwatch_renderw.py",
-      "query.tx"
-    ],
-    "Templates/": [
-      "template_conjuration_log.json",
-      "template_ritual_log.json"
-    ]
-  },
-  "Goblin Diary": {
+    "CCC ./": "Expected file tree by project completion: File 1, File 2"
+},
+
+  "Goblin Diary":
+
+{
+
     "Diary": "DDD Look for mistakes in the Wizards approach. Give Feedback on how the Wizard could serve the Dark Prince better.",
+
     "Mood": "DDD What is the current mood of the Goblin, regarding his role in the rituals? Answer in a single word."
+
   },
-  "Wizard Commentary": {
+
+ 
+
+  "Wizard Commentary":
+
+{
+
     "Diary": "WWW Since you are the only one doing any work here, you might as well comment on it.",
+
     "Mood": "WWW What is the current mood of the Wizard, regarding his role in the rituals? Answer in a single word."
-  },
+
+},
+
+ 
+
   "Dark Prince Diary": {
-    "Diary": "The Dark Prince commands swift completion of the whisper summarization and ritual orchestration enhancements.",
-    "Mood": "Impatient"
+    "Diary": "His liege may record all whims that the Dark Prince displays.",
+    "Mood": "impatient"
   },
-  "Sage Wisdom": [
-    "SSS A project prophecy from the ancient Sage."
-  ],
-  "Overall Project Description": "Core whisper summarization and ritual orchestration tasks are defined. Next, implement these in ritualc.sh to achieve automated logging and task execution.",
+
+ 
+
+"Sage Wisdom": ["SSS A project prophecy from the ancient Sage."],
+
+ 
+
+  "Overall Project Description": "We are at the initial setup stage: to reach the success definition, we must add a .gitignore, README.md, and LICENSE file, initialize the Git repository, and push it to GitHub.",
+
   "Ritual Needs": "WWW Does the Wizard wish for anything to be installed in his silicone realm?"
+
 }
